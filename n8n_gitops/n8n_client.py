@@ -200,11 +200,10 @@ class N8nClient:
         Raises:
             APIError: If request fails
         """
-        # Update workflow with active: true
         self._request(
-            "PATCH",
-            f"/api/v1/workflows/{workflow_id}",
-            json_data={"active": True},
+            "POST",
+            f"/api/v1/workflows/{workflow_id}/activate",
+            json_data={},
         )
 
     def deactivate_workflow(self, workflow_id: str) -> None:
@@ -216,33 +215,13 @@ class N8nClient:
         Raises:
             APIError: If request fails
         """
-        # Update workflow with active: false
         self._request(
-            "PATCH",
-            f"/api/v1/workflows/{workflow_id}",
-            json_data={"active": False},
-        )
-
-    def archive_workflow(self, workflow_id: str) -> None:
-        """Archive a workflow.
-
-        Workflows must be archived before they can be deleted.
-
-        Args:
-            workflow_id: Workflow ID
-
-        Raises:
-            APIError: If request fails
-        """
-        self._request(
-            "PUT",
-            f"/api/v1/workflows/{workflow_id}/archive",
+            "POST",
+            f"/api/v1/workflows/{workflow_id}/deactivate",
         )
 
     def delete_workflow(self, workflow_id: str) -> None:
-        """Delete an archived workflow.
-
-        Note: Workflow must be archived first using archive_workflow().
+        """Delete a workflow.
 
         Args:
             workflow_id: Workflow ID

@@ -251,7 +251,6 @@ def run_deploy(args: argparse.Namespace) -> None:
                     # Delete old workflow and create new one
                     print(f"    Deleting old workflow...")
                     try:
-                        client.archive_workflow(workflow_id)
                         client.delete_workflow(workflow_id)
                         print(f"    ✓ Old workflow deleted")
                     except Exception as e:
@@ -262,6 +261,17 @@ def run_deploy(args: argparse.Namespace) -> None:
                     result = client.create_workflow(api_workflow)
                     workflow_id = result.get("id")
                     print(f"    ✓ Created with ID: {workflow_id}")
+
+            # Set active state based on manifest
+            if workflow_id:
+                if spec.active:
+                    print(f"    Activating workflow...")
+                    client.activate_workflow(workflow_id)
+                    print(f"    ✓ Activated")
+                else:
+                    print(f"    Deactivating workflow...")
+                    client.deactivate_workflow(workflow_id)
+                    print(f"    ✓ Deactivated")
 
         except Exception as e:
             print(f"    ✗ Error: {e}")
@@ -284,7 +294,6 @@ def run_deploy(args: argparse.Namespace) -> None:
             wf_name = wf.get("name")
             try:
                 print(f"  Deleting: {wf_name}...")
-                client.archive_workflow(wf_id)
                 client.delete_workflow(wf_id)
                 print(f"    ✓ Deleted")
             except Exception as e:

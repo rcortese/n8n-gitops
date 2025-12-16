@@ -1,7 +1,9 @@
 """Export command implementation."""
 
 import argparse
+import json
 import re
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +14,7 @@ from n8n_gitops.gitref import WorkingTreeSnapshot
 from n8n_gitops.manifest import load_manifest
 from n8n_gitops.n8n_client import N8nClient
 from n8n_gitops.normalize import normalize_json, strip_volatile_fields
-from n8n_gitops.render import CODE_FIELD_NAMES, compute_sha256
+from n8n_gitops.render import CODE_FIELD_NAMES
 
 
 def run_export(args: argparse.Namespace) -> None:
@@ -180,31 +182,54 @@ def run_export(args: argparse.Namespace) -> None:
             }
         )
 
+    # Clean up local workflows/scripts that don't exist remotely (mirror mode)
+    if args.all:
+        print("\nCleaning up local files not in remote...")
+        exported_names = {spec["name"] for spec in exported_specs}
+
+        # Clean up workflow files
+        if workflows_dir.exists():
+            for workflow_file in workflows_dir.glob("*.json"):
+                # Try to determine workflow name from file
+                try:
+                    workflow_data = json.loads(workflow_file.read_text())
+                    local_name = workflow_data.get("name")
+
+                    if local_name and local_name not in exported_names:
+                        print(f"  🗑  Deleting local workflow not in remote: {local_name}")
+                        workflow_file.unlink()
+
+                        # Also delete corresponding script directory
+                        safe_name = _sanitize_filename(local_name)
+                        script_dir = scripts_dir / safe_name
+                        if script_dir.exists() and script_dir.is_dir():
+                            shutil.rmtree(script_dir)
+                            print(f"      → Deleted scripts directory: scripts/{safe_name}/")
+                except Exception as e:
+                    print(f"  ⚠ Warning: Could not process {workflow_file.name}: {e}")
+
+        # Clean up orphaned script directories (scripts without corresponding workflow)
+        if scripts_dir.exists():
+            for script_dir in scripts_dir.iterdir():
+                if script_dir.is_dir():
+                    # Check if there's a corresponding workflow
+                    dir_name = script_dir.name
+                    # Check if any exported workflow would use this directory
+                    has_match = any(
+                        _sanitize_filename(spec["name"]) == dir_name
+                        for spec in exported_specs
+                    )
+                    if not has_match:
+                        print(f"  🗑  Deleting orphaned scripts directory: scripts/{dir_name}/")
+                        shutil.rmtree(script_dir)
+
     # Update manifest if --all mode
     if args.all and exported_specs:
         print("\nUpdating manifest...")
 
-        # Load existing manifest if it exists
-        existing_specs: list[dict[str, Any]] = []
-        if manifest_file.exists():
-            try:
-                manifest_data = yaml.safe_load(manifest_file.read_text())
-                if isinstance(manifest_data, dict) and "workflows" in manifest_data:
-                    existing_specs = manifest_data["workflows"]
-            except Exception as e:
-                print(f"  ⚠ Warning: Could not load existing manifest: {e}")
-
-        # Merge: update existing entries or add new ones
-        existing_names = {spec.get("name"): idx for idx, spec in enumerate(existing_specs)}
-
-        for new_spec in exported_specs:
-            name = new_spec["name"]
-            if name in existing_names:
-                # Update existing entry
-                existing_specs[existing_names[name]] = new_spec
-            else:
-                # Add new entry
-                existing_specs.append(new_spec)
+        # In --all mode, replace manifest completely with exported workflows (mirror mode)
+        # This ensures deleted workflows are removed from manifest
+        existing_specs = exported_specs
 
         # Write manifest
         manifest_content = yaml.dump(
@@ -323,29 +348,18 @@ def _externalize_workflow_code(
             safe_node_name = _sanitize_filename(node_name)
             extension = _get_file_extension(field_name)
 
-            # Create unique filename: node-name_field-type.ext
-            # If multiple nodes with same name, append counter
+            # Create filename: node-name_field-type.ext
+            # Overwrite if it already exists (no counter)
             base_filename = f"{safe_node_name}_{field_name}{extension}"
             script_path = workflow_scripts_dir / base_filename
 
-            # Handle duplicate filenames
-            counter = 1
-            while script_path.exists():
-                base_filename = f"{safe_node_name}_{field_name}_{counter}{extension}"
-                script_path = workflow_scripts_dir / base_filename
-                counter += 1
-
-            # Write code to file
+            # Write code to file (overwrite if exists)
             script_path.write_text(code_value)
-
-            # Compute checksum
-            code_bytes = code_value.encode("utf-8")
-            checksum = compute_sha256(code_bytes)
 
             # Create include directive
             # Path relative to n8n/ directory
             relative_path = f"scripts/{safe_workflow_name}/{base_filename}"
-            include_directive = f"@@n8n-gitops:include {relative_path} sha256={checksum}"
+            include_directive = f"@@n8n-gitops:include {relative_path}"
 
             # Replace inline code with directive
             parameters[field_name] = include_directive

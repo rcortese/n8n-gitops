@@ -230,7 +230,7 @@ class TestExternalizeWorkflowCode:
             assert count == 0
 
     def test_handle_duplicate_filenames(self):
-        """Test that duplicate filenames are handled with counters."""
+        """Test that duplicate filenames overwrite (no counters)."""
         with TemporaryDirectory() as tmpdir:
             scripts_dir = Path(tmpdir)
             workflow = {
@@ -257,16 +257,14 @@ class TestExternalizeWorkflowCode:
 
             assert count == 2
 
-            # Check both files exist with different names
+            # Check that only one file exists (second one overwrites first)
             file1 = scripts_dir / "Test" / "Same_Name_jsCode.js"
-            file2 = scripts_dir / "Test" / "Same_Name_jsCode_1.js"
             assert file1.exists()
-            assert file2.exists()
-            assert file1.read_text() == "console.log('first');"
-            assert file2.read_text() == "console.log('second');"
+            # The second node's code should have overwritten the first
+            assert file1.read_text() == "console.log('second');"
 
-    def test_include_directive_has_checksum(self):
-        """Test that generated include directives have checksums."""
+    def test_include_directive_has_no_checksum(self):
+        """Test that generated include directives do NOT have checksums."""
         with TemporaryDirectory() as tmpdir:
             scripts_dir = Path(tmpdir)
             workflow = {
@@ -286,11 +284,10 @@ class TestExternalizeWorkflowCode:
             )
 
             directive = modified["nodes"][0]["parameters"]["jsCode"]
-            assert "sha256=" in directive
-            # Check that sha256 value is 64 hex characters
-            sha_part = directive.split("sha256=")[1]
-            assert len(sha_part) == 64
-            assert all(c in "0123456789abcdef" for c in sha_part)
+            # Checksum should NOT be present
+            assert "sha256=" not in directive
+            # Should just be the basic include directive
+            assert directive == "@@n8n-gitops:include scripts/Test/Node_jsCode.js"
 
     def test_workflow_without_nodes(self):
         """Test handling workflow without nodes."""
