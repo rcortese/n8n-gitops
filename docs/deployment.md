@@ -1,3 +1,8 @@
+---
+sidebar_position: 4
+title: Deployment
+---
+
 # Deployment
 
 Deploy workflows from your Git repository to your n8n instance.
@@ -284,7 +289,7 @@ If the n8n API returns an error:
 💡 Tip: The workflow file may contain n8n-managed fields.
 Run 'n8n-gitops validate' to check for problematic fields.
 Re-export the workflow to get a clean version:
-  n8n-gitops export --externalize-code
+  n8n-gitops export
 ```
 
 Common fixes:

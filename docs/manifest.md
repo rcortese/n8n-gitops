@@ -1,3 +1,8 @@
+---
+sidebar_position: 6
+title: Manifest File
+---
+
 # Manifest File
 
 The manifest file (`n8n/manifests/workflows.yaml`) defines which workflows to deploy and their configuration.

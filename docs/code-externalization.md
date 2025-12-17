@@ -1,3 +1,8 @@
+---
+sidebar_position: 5
+title: Code Externalization
+---
+
 # Code Externalization
 
 Store Python/JavaScript code in separate files instead of inline in workflow JSON, making code easier to version control, review, and maintain.
@@ -81,17 +86,17 @@ Where `<path>` is relative to `n8n/` directory and must be under `scripts/`.
 
 ## Exporting with Externalization
 
-Use `--externalize-code` flag to extract code when exporting:
+Externalization is controlled by the `externalize_code` flag in `n8n/manifests/workflows.yaml` (default: `true` from `create-project`).
 
-```bash
-n8n-gitops export --externalize-code
+```yaml
+# n8n/manifests/workflows.yaml
+externalize_code: true   # extract code to n8n/scripts/ and add include directives
 ```
 
-This will:
-1. Detect inline code in workflow nodes
-2. Extract code to separate files in `n8n/scripts/<workflow-name>/`
-3. Replace inline code with include directives
-4. Use appropriate file extensions (`.py` for Python, `.js` for JavaScript)
+Steps:
+1. Set `externalize_code` in the manifest to your desired mode.
+2. Run `n8n-gitops export` (no extra flags needed).
+3. Review generated scripts in `n8n/scripts/<workflow-name>/` and include directives in workflow JSON.
 
 ### Supported Code Fields
 
@@ -136,31 +141,17 @@ my-n8n-project/
 
 ### From Inline to Externalized
 
-```bash
-# Export with inline code
-n8n-gitops export
+1. Set `externalize_code: true` in `n8n/manifests/workflows.yaml`.
+2. Run `n8n-gitops export`.
 
-# Switch to externalized code
-n8n-gitops export --externalize-code
-```
-
-Result:
-- Script files are created in `n8n/scripts/`
-- Workflow JSON updated with include directives
+Result: script files are created in `n8n/scripts/` and workflow JSON uses include directives.
 
 ### From Externalized to Inline
 
-```bash
-# Export with externalized code
-n8n-gitops export --externalize-code
+1. Set `externalize_code: false` in `n8n/manifests/workflows.yaml`.
+2. Run `n8n-gitops export`.
 
-# Switch to inline code
-n8n-gitops export
-```
-
-Result:
-- Script files are deleted from `n8n/scripts/`
-- Workflow JSON updated with inline code
+Result: script files under `n8n/scripts/` are removed and workflow JSON contains inline code.
 
 ## Deployment with Includes
 
@@ -183,8 +174,10 @@ The deployment process:
 
 ### 1. Export with Externalization
 
+Ensure `externalize_code: true` is set in `n8n/manifests/workflows.yaml`, then run:
+
 ```bash
-n8n-gitops export --externalize-code
+n8n-gitops export
 ```
 
 ### 2. Edit Script File
@@ -298,8 +291,8 @@ return format(items[0].json);
 ### 1. Always Use Externalization in Git
 
 ```bash
-# Always export with externalization for Git
-n8n-gitops export --externalize-code
+# Set externalize_code: true (default) and export
+n8n-gitops export
 ```
 
 This gives you the best version control experience.
@@ -320,10 +313,7 @@ Node names become part of filenames, so make them descriptive.
 
 ### 3. Keep Scripts Directory Clean
 
-Don't manually create files in `n8n/scripts/`. Always use:
-```bash
-n8n-gitops export --externalize-code
-```
+Don't manually create files in `n8n/scripts/`. Let `n8n-gitops export` generate them based on `externalize_code` in the manifest.
 
 ### 4. Add Comments
 

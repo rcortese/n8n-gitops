@@ -1,3 +1,8 @@
+---
+sidebar_position: 1
+title: Getting Started
+---
+
 # Getting Started
 
 ## Installation
@@ -60,17 +65,16 @@ See [Authentication](authentication.md) for more details.
 ### 3. Export existing workflows
 
 ```bash
-# Export workflows with inline code
+# Export workflows (uses externalize_code from manifest, default: true)
 n8n-gitops export
-
-# Export workflows and externalize code to separate files
-n8n-gitops export --externalize-code
 ```
 
 This creates:
 - JSON files in `n8n/workflows/`
 - Manifest entries in `n8n/manifests/workflows.yaml`
-- When using `--externalize-code`: Script files in `n8n/scripts/` with include directives
+- When `externalize_code` is `true` in `n8n/manifests/workflows.yaml` (default): Script files in `n8n/scripts/` with include directives
+
+To keep code inline, set `externalize_code: false` in `n8n/manifests/workflows.yaml` before running `n8n-gitops export`.
 
 See [Export](export.md) for more details.
 
@@ -104,7 +108,7 @@ See [Deployment](deployment.md) for more details.
 
 ## Recommended Workflow
 
-1. **Export** existing workflows: `n8n-gitops export --externalize-code`
+1. **Export** existing workflows: `n8n-gitops export`
 2. **Commit** to Git: `git add . && git commit -m "Initial export"`
 3. **Validate**: `n8n-gitops validate --strict`
 4. **Tag** release: `git tag v1.0.0`

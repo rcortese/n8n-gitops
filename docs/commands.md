@@ -1,3 +1,8 @@
+---
+sidebar_position: 8
+title: Commands Reference
+---
+
 # Commands Reference
 
 Complete reference for all n8n-gitops CLI commands.
@@ -48,24 +53,22 @@ Export all workflows from n8n instance (mirror mode).
 ### Usage
 
 ```bash
-n8n-gitops export [--externalize-code] [--api-url URL] [--api-key KEY]
+n8n-gitops export [--api-url URL] [--api-key KEY] [--repo-root PATH]
 ```
 
 ### Options
 
-- `--externalize-code` - Extract inline code to separate script files
 - `--api-url URL` - n8n API URL (overrides env and .n8n-auth)
 - `--api-key KEY` - n8n API key (overrides env and .n8n-auth)
 - `--repo-root PATH` - Repository root path (default: current directory)
 
+Code externalization is controlled by `externalize_code` in `n8n/manifests/workflows.yaml` (default: `true`).
+
 ### Examples
 
 ```bash
-# Export with inline code
+# Export using manifest settings (default externalize_code: true)
 n8n-gitops export
-
-# Export with externalized code
-n8n-gitops export --externalize-code
 
 # Export with custom credentials
 n8n-gitops export --api-url https://n8n.example.com --api-key abc123
@@ -304,7 +307,7 @@ cp .n8n-auth.example .n8n-auth
 # Edit .n8n-auth with your credentials
 
 # 3. Export workflows
-n8n-gitops export --externalize-code
+n8n-gitops export  # uses externalize_code from manifest (default: true)
 
 # 4. Commit to git
 git init
@@ -317,7 +320,7 @@ git tag v1.0.0
 
 ```bash
 # 1. Export latest from n8n
-n8n-gitops export --externalize-code
+n8n-gitops export  # uses externalize_code from manifest
 
 # 2. Make changes to scripts or workflows
 vim n8n/scripts/my-workflow/process.py
@@ -364,7 +367,7 @@ n8n-gitops rollback --git-ref v1.1.0
 
 ```bash
 # Mirror remote n8n to local
-n8n-gitops export --externalize-code
+n8n-gitops export  # uses externalize_code from manifest
 
 # Review changes
 git status

@@ -1,3 +1,8 @@
+---
+sidebar_position: 2
+title: Authentication
+---
+
 # Authentication
 
 n8n-gitops requires API credentials to connect to your n8n instance.

@@ -29,7 +29,7 @@ cp .n8n-auth.example .n8n-auth
 # Edit .n8n-auth with your credentials
 
 # Export workflows
-n8n-gitops export --externalize-code
+n8n-gitops export
 
 # Commit to Git
 git init
@@ -53,6 +53,7 @@ n8n-gitops deploy --git-ref v1.0.0
 - **[Deployment](docs/deployment.md)** - Deploy workflows to n8n
 - **[Code Externalization](docs/code-externalization.md)** - Store code in separate files
 - **[Manifest File](docs/manifest.md)** - Workflow configuration format
+- **[n8n Enterprise Git Comparison](docs/vs-n8n-enterprise-git.md)** - Decide between n8n-gitops and Enterprise Git
 - **[Commands Reference](docs/commands.md)** - All CLI commands
 
 ## Key Concepts
@@ -62,7 +63,7 @@ n8n-gitops deploy --git-ref v1.0.0
 Export always mirrors your n8n instance:
 
 ```bash
-n8n-gitops export --externalize-code
+n8n-gitops export
 ```
 
 - ✅ Exports ALL workflows
@@ -72,7 +73,7 @@ n8n-gitops export --externalize-code
 
 ### Code Externalization
 
-Store code in separate files instead of inline JSON:
+Store code in separate files instead of inline JSON (controlled by `externalize_code` in `n8n/manifests/workflows.yaml`, default: `true`):
 
 **Workflow JSON:**
 ```json
@@ -113,7 +114,7 @@ n8n-gitops deploy --git-ref abc123
 n8n-gitops create-project <path>
 
 # Export workflows (mirror mode)
-n8n-gitops export [--externalize-code]
+n8n-gitops export
 
 # Validate workflows
 n8n-gitops validate [--strict]
@@ -131,7 +132,7 @@ See [Commands Reference](docs/commands.md) for complete documentation.
 
 ```bash
 # 1. Export from n8n
-n8n-gitops export --externalize-code
+n8n-gitops export
 
 # 2. Edit scripts
 vim n8n/scripts/payment-processing/validate.py
@@ -190,15 +191,3 @@ MIT
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Documentation
-
-For detailed documentation, see the [docs/](docs/) directory:
-
-- [Getting Started](docs/getting-started.md)
-- [Authentication](docs/authentication.md)
-- [Export](docs/export.md)
-- [Deployment](docs/deployment.md)
-- [Code Externalization](docs/code-externalization.md)
-- [Manifest File](docs/manifest.md)
-- [Commands Reference](docs/commands.md)

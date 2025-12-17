@@ -1,3 +1,8 @@
+---
+sidebar_position: 3
+title: Export
+---
+
 # Export Command
 
 The `export` command downloads all workflows from your n8n instance and saves them locally in **mirror mode**.
@@ -5,7 +10,7 @@ The `export` command downloads all workflows from your n8n instance and saves th
 ## Usage
 
 ```bash
-n8n-gitops export [--externalize-code]
+n8n-gitops export
 ```
 
 ## Mirror Mode
@@ -19,27 +24,14 @@ The export command operates in **mirror mode**, which means:
 
 This ensures your local repository is always a perfect mirror of your n8n instance.
 
-## Options
+## Externalize Code Setting
 
-### `--externalize-code`
+Code externalization is controlled by the `externalize_code` flag in `n8n/manifests/workflows.yaml` (default: `true`).
 
-Extracts inline code from workflow nodes to separate script files.
+- `externalize_code: true` → Extract code to `n8n/scripts/` and insert include directives in workflow JSON (default behavior).
+- `externalize_code: false` → Keep code inline in workflow JSON; script directories are removed on export.
 
-**Without `--externalize-code` (default):**
-```bash
-n8n-gitops export
-```
-- Workflows contain inline code
-- All script directories are deleted (if any exist)
-- Clean mirror of n8n's native format
-
-**With `--externalize-code`:**
-```bash
-n8n-gitops export --externalize-code
-```
-- Code is extracted to `n8n/scripts/`
-- Include directives replace inline code
-- Better for version control and code review
+Adjust the manifest before running `n8n-gitops export` to switch modes.
 
 ## Examples
 
@@ -62,15 +54,9 @@ n8n/
     └── workflows.yaml
 ```
 
-### Export with Code Externalization
+### Export with Code Externalization (default)
 
-Export all workflows and externalize code:
-
-```bash
-n8n-gitops export --externalize-code
-```
-
-Result:
+With `externalize_code: true` in `n8n/manifests/workflows.yaml` (default), export produces:
 ```
 n8n/
 ├── workflows/
@@ -89,31 +75,8 @@ n8n/
 
 ### Switching Between Modes
 
-**Scenario:** You previously exported with `--externalize-code`, now want inline code.
-
-```bash
-# First export (externalized)
-n8n-gitops export --externalize-code
-# Creates: n8n/workflows/*.json + n8n/scripts/*/
-
-# Switch to inline code
-n8n-gitops export
-# Updates: n8n/workflows/*.json (now with inline code)
-# Deletes: n8n/scripts/*/ (no longer needed)
-```
-
-**Scenario:** You previously exported with inline code, now want externalized.
-
-```bash
-# First export (inline)
-n8n-gitops export
-# Creates: n8n/workflows/*.json (inline code)
-
-# Switch to externalized
-n8n-gitops export --externalize-code
-# Updates: n8n/workflows/*.json (now with include directives)
-# Creates: n8n/scripts/*/ (extracted code)
-```
+- **Go inline:** Set `externalize_code: false` in `n8n/manifests/workflows.yaml`, then run `n8n-gitops export` (scripts are removed; workflows contain inline code).
+- **Go back to externalized:** Set `externalize_code: true` in `n8n/manifests/workflows.yaml`, then run `n8n-gitops export` (scripts are regenerated; workflows reference include directives).
 
 ## What Gets Exported
 
@@ -193,7 +156,7 @@ n8n/
     └── workflows.yaml
 ```
 
-### Script Files (with --externalize-code)
+### Script Files (when `externalize_code` is true)
 
 Code is extracted from these node fields:
 - `pythonCode` → `.py` files
@@ -224,13 +187,8 @@ Output:
 
 ### Deleting Script Files
 
-When switching from externalized to inline:
+When `externalize_code` is `false`, export removes script directories to keep the repo aligned with inline code:
 
-```bash
-n8n-gitops export  # without --externalize-code
-```
-
-Output:
 ```
 🗑  Deleting scripts directory (inline code mode): scripts/workflow1/
 🗑  Deleting scripts directory (inline code mode): scripts/workflow2/
@@ -238,17 +196,7 @@ Output:
 
 ### Overwriting Files
 
-Script files are always overwritten on re-export (no `_1`, `_2` suffixes):
-
-```bash
-# First export
-n8n-gitops export --externalize-code
-# Creates: Process_Data.py
-
-# Modify code in n8n, then re-export
-n8n-gitops export --externalize-code
-# Overwrites: Process_Data.py (no Process_Data_1.py)
-```
+When `externalize_code` is `true`, script files are overwritten on each export (no `_1`, `_2` suffixes).
 
 ## Output Example
 
@@ -287,9 +235,9 @@ Updating manifest...
 
 Next steps:
   1. Review the exported workflows
-  2. Review the externalized scripts in n8n/scripts/
+  2. Review the externalized scripts in n8n/scripts/ (when `externalize_code` is true)
   3. git add n8n/
-  4. git commit -m 'Export workflows from n8n with externalized code'
+  4. git commit -m 'Export workflows from n8n'
 ```
 
 ## Authentication
