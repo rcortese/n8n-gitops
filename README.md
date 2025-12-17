@@ -12,6 +12,8 @@ GitOps CLI for n8n Community Edition - Manage your n8n workflows as code with Gi
 - 🔌 **Active State Management**: Control workflow activation via API endpoints
 - 🧹 **Clean Deployments**: Replace workflows with clean state
 
+![Logo](n8n-gitops-256.png)
+
 ## Quick Start
 
 ```bash
