@@ -15,9 +15,11 @@ This file is created automatically when you run `n8n-gitops export`.
 The manifest is a YAML file with the following structure:
 
 ```yaml
+# Code externalization setting (optional, default: true)
+externalize_code: true
+
 workflows:
   - name: "Workflow Name"
-    file: "workflows/filename.json"
     active: true
     tags:
       - tag1
@@ -29,6 +31,26 @@ workflows:
 ```
 
 ## Fields
+
+### `externalize_code` (optional, default: `true`)
+
+Controls whether code from workflow nodes (Python, JavaScript) is extracted to separate files.
+
+```yaml
+externalize_code: true   # Extract code to n8n/scripts/ directory
+externalize_code: false  # Keep code inline in workflow JSON
+```
+
+**When `true`**:
+- Code is extracted to `n8n/scripts/{Workflow_Name}/{Node_Name}.py` or `.js`
+- Workflow JSON contains include directives: `@@n8n-gitops:include scripts/path/file.ext`
+- Better for version control (proper syntax highlighting, diffs)
+
+**When `false`**:
+- Code remains inline in workflow JSON files
+- Simpler structure, all workflow data in one file
+
+This setting is applied during `n8n-gitops export` and affects all workflows.
 
 ### `workflows` (required)
 
@@ -50,16 +72,10 @@ name: "Payment Processing"
 - Must be unique across all workflows
 - Used to match with existing workflows in n8n
 - Case-sensitive
-
-#### `file` (required)
-
-Path to the workflow JSON file, relative to `n8n/` directory.
-
-```yaml
-file: "workflows/payment-processing.json"
-```
-
-Always use forward slashes (`/`), even on Windows.
+- **Auto-generates the workflow file path**: The file path is automatically derived from the workflow name
+  - Example: `"Payment Processing"` → `workflows/Payment_Processing.json`
+  - Example: `"Data Sync - v2"` → `workflows/Data_Sync_-_v2.json`
+  - Spaces become underscores, special characters are sanitized
 
 #### `active` (optional, default: `false`)
 
@@ -116,9 +132,11 @@ requires_env:
 ## Example
 
 ```yaml
+# Code externalization (default: true)
+externalize_code: true
+
 workflows:
   - name: "Payment Processing"
-    file: "workflows/payment-processing.json"
     active: true
     tags:
       - production
@@ -130,7 +148,6 @@ workflows:
       - STRIPE_WEBHOOK_SECRET
 
   - name: "Data Sync"
-    file: "workflows/data-sync.json"
     active: false
     tags:
       - development
@@ -140,7 +157,6 @@ workflows:
     requires_env: []
 
   - name: "Email Notifications"
-    file: "workflows/email-notifications.json"
     active: true
     tags:
       - production
@@ -153,6 +169,11 @@ workflows:
       - SMTP_USER
       - SMTP_PASS
 ```
+
+**Note**: File paths are auto-generated from workflow names:
+- `"Payment Processing"` → `workflows/Payment_Processing.json`
+- `"Data Sync"` → `workflows/Data_Sync.json`
+- `"Email Notifications"` → `workflows/Email_Notifications.json`
 
 ## Mirror Mode
 
@@ -174,9 +195,9 @@ n8n-gitops validate
 
 This checks:
 - Manifest file exists and is valid YAML
-- Required fields (`name`, `file`) are present
+- Required fields (`name`) are present
 - No duplicate workflow names
-- Referenced workflow files exist
+- Referenced workflow files exist (auto-generated from names)
 - Workflow JSON is valid
 
 ## Deployment Behavior
@@ -197,12 +218,11 @@ If a workflow name doesn't exist in n8n:
 ```yaml
 workflows:
   - name: "New Workflow"
-    file: "workflows/new-workflow.json"
     active: true
 ```
 
 Result:
-- New workflow is created in n8n
+- New workflow is created in n8n (reads from `workflows/New_Workflow.json`)
 - Workflow is activated
 
 ### Replace
@@ -212,13 +232,12 @@ If a workflow name already exists in n8n:
 ```yaml
 workflows:
   - name: "Existing Workflow"
-    file: "workflows/existing-workflow.json"
     active: false
 ```
 
 Result:
 - Old workflow is deleted
-- New workflow is created with same name
+- New workflow is created with same name (reads from `workflows/Existing_Workflow.json`)
 - Workflow is deactivated
 - **Note**: Workflow ID changes
 
@@ -268,10 +287,10 @@ Example `env.schema.json`:
 Always export to keep manifest up to date:
 
 ```bash
-n8n-gitops export --externalize-code
+n8n-gitops export
 ```
 
-Don't manually edit the manifest unless you know what you're doing.
+The manifest will be updated automatically in mirror mode. Don't manually edit the manifest unless you know what you're doing.
 
 ### 2. Use Descriptive Names
 
@@ -342,10 +361,13 @@ Fix: Ensure all workflow names in the manifest are unique.
 ### Error: Workflow file not found
 
 ```
-Error: Workflow file not found: workflows/missing.json
+Error: Workflow file not found: workflows/My_Workflow.json
 ```
 
-Fix: Ensure the `file` path is correct and the file exists.
+Fix: The file path is auto-generated from the workflow name. Ensure:
+1. The workflow JSON file exists in `n8n/workflows/`
+2. The filename matches the sanitized workflow name (spaces → underscores)
+3. Example: Workflow name `"My Workflow"` requires file `workflows/My_Workflow.json`
 
 ### Error: Invalid YAML
 

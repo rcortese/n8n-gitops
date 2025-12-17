@@ -47,6 +47,9 @@ N8N_API_KEY=
 # When false, code remains inline in workflow JSON
 externalize_code: true
 
+# Tag ID to name mapping
+tags: {}
+
 workflows: []
 """
     (manifests_dir / "workflows.yaml").write_text(workflows_yaml_content)

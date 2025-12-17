@@ -30,14 +30,13 @@ class TestLoadManifest:
             "n8n/manifests/workflows.yaml": """
 workflows:
   - name: "Test Workflow"
-    file: "workflows/test.json"
     active: true
 """
         })
         manifest = load_manifest(snapshot)
         assert len(manifest.workflows) == 1
         assert manifest.workflows[0].name == "Test Workflow"
-        assert manifest.workflows[0].file == "workflows/test.json"
+        assert manifest.workflows[0].file == "workflows/Test_Workflow.json"
         assert manifest.workflows[0].active is True
 
     def test_load_manifest_with_all_fields(self):
@@ -46,7 +45,6 @@ workflows:
             "n8n/manifests/workflows.yaml": """
 workflows:
   - name: "Complete Workflow"
-    file: "workflows/complete.json"
     active: true
     tags:
       - production
@@ -60,6 +58,7 @@ workflows:
         manifest = load_manifest(snapshot)
         wf = manifest.workflows[0]
         assert wf.name == "Complete Workflow"
+        assert wf.file == "workflows/Complete_Workflow.json"
         assert wf.tags == ["production", "critical"]
         assert wf.requires_credentials == ["stripe-api"]
         assert wf.requires_env == ["STRIPE_KEY"]
@@ -95,26 +94,13 @@ workflows:
         with pytest.raises(ManifestError, match="missing required field 'name'"):
             load_manifest(snapshot)
 
-    def test_manifest_entry_missing_file(self):
-        """Test that workflow entry must have 'file'."""
-        snapshot = MockSnapshot({
-            "n8n/manifests/workflows.yaml": """
-workflows:
-  - name: "Test"
-"""
-        })
-        with pytest.raises(ManifestError, match="missing required field 'file'"):
-            load_manifest(snapshot)
-
     def test_manifest_duplicate_names(self):
         """Test that duplicate workflow names are rejected."""
         snapshot = MockSnapshot({
             "n8n/manifests/workflows.yaml": """
 workflows:
   - name: "Duplicate"
-    file: "workflows/test1.json"
   - name: "Duplicate"
-    file: "workflows/test2.json"
 """
         })
         with pytest.raises(ManifestError, match="Duplicate workflow name"):
@@ -140,4 +126,54 @@ workflows:
 """
         })
         with pytest.raises(ManifestError, match="Failed to parse manifest YAML"):
+            load_manifest(snapshot)
+
+    def test_manifest_with_tags(self):
+        """Test that tags section is properly loaded."""
+        snapshot = MockSnapshot({
+            "n8n/manifests/workflows.yaml": """
+tags:
+  "1": "production"
+  "2": "development"
+  "3": "critical"
+
+workflows:
+  - name: "Test Workflow"
+    active: true
+    tags:
+      - "1"
+      - "3"
+"""
+        })
+        manifest = load_manifest(snapshot)
+        assert len(manifest.tags) == 3
+        assert manifest.tags["1"] == "production"
+        assert manifest.tags["2"] == "development"
+        assert manifest.tags["3"] == "critical"
+        assert manifest.workflows[0].tags == ["1", "3"]
+
+    def test_manifest_empty_tags(self):
+        """Test that empty tags section works."""
+        snapshot = MockSnapshot({
+            "n8n/manifests/workflows.yaml": """
+tags: {}
+
+workflows:
+  - name: "Test Workflow"
+"""
+        })
+        manifest = load_manifest(snapshot)
+        assert len(manifest.tags) == 0
+        assert manifest.workflows[0].tags == []
+
+    def test_manifest_tags_not_dict(self):
+        """Test that tags must be a dictionary."""
+        snapshot = MockSnapshot({
+            "n8n/manifests/workflows.yaml": """
+tags: ["not", "a", "dict"]
+
+workflows: []
+"""
+        })
+        with pytest.raises(ManifestError, match="'tags' must be a dictionary"):
             load_manifest(snapshot)

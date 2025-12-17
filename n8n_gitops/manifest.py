@@ -13,11 +13,17 @@ from n8n_gitops.gitref import Snapshot
 class WorkflowSpec:
     """Workflow specification from manifest."""
     name: str
-    file: str
     active: bool = False
     tags: list[str] = field(default_factory=list)
     requires_credentials: list[str] = field(default_factory=list)
     requires_env: list[str] = field(default_factory=list)
+
+    @property
+    def file(self) -> str:
+        """Auto-generate file path from workflow name."""
+        from n8n_gitops.commands.export_workflows import _sanitize_filename
+        safe_name = _sanitize_filename(self.name)
+        return f"workflows/{safe_name}.json"
 
 
 @dataclass
@@ -25,6 +31,7 @@ class Manifest:
     """Parsed manifest containing workflow specifications."""
     workflows: list[WorkflowSpec]
     externalize_code: bool = True
+    tags: dict[str, str] = field(default_factory=dict)  # Maps tag ID to tag name
 
 
 def load_manifest(snapshot: Snapshot, n8n_root: str = "n8n") -> Manifest:
@@ -62,6 +69,18 @@ def load_manifest(snapshot: Snapshot, n8n_root: str = "n8n") -> Manifest:
     if not isinstance(externalize_code, bool):
         raise ManifestError("'externalize_code' must be a boolean")
 
+    # Parse tags (optional, default empty dict)
+    tags_data = data.get("tags", {})
+    if not isinstance(tags_data, dict):
+        raise ManifestError("'tags' must be a dictionary")
+
+    # Validate tags structure: all keys and values must be strings
+    tags_mapping: dict[str, str] = {}
+    for tag_id, tag_name in tags_data.items():
+        if not isinstance(tag_id, str) or not isinstance(tag_name, str):
+            raise ManifestError("All tag IDs and names must be strings")
+        tags_mapping[tag_id] = tag_name
+
     # Check for workflows key
     if "workflows" not in data:
         raise ManifestError("Manifest missing required 'workflows' key")
@@ -81,16 +100,11 @@ def load_manifest(snapshot: Snapshot, n8n_root: str = "n8n") -> Manifest:
         # Validate required fields
         if "name" not in workflow_data:
             raise ManifestError(f"Workflow entry {idx} missing required field 'name'")
-        if "file" not in workflow_data:
-            raise ManifestError(f"Workflow entry {idx} missing required field 'file'")
 
         name = workflow_data["name"]
-        file_path = workflow_data["file"]
 
         if not isinstance(name, str) or not name:
             raise ManifestError(f"Workflow entry {idx}: 'name' must be a non-empty string")
-        if not isinstance(file_path, str) or not file_path:
-            raise ManifestError(f"Workflow entry {idx}: 'file' must be a non-empty string")
 
         # Check for duplicate names
         if name in seen_names:
@@ -137,7 +151,6 @@ def load_manifest(snapshot: Snapshot, n8n_root: str = "n8n") -> Manifest:
         workflows.append(
             WorkflowSpec(
                 name=name,
-                file=file_path,
                 active=active,
                 tags=tags,
                 requires_credentials=requires_credentials,
@@ -145,4 +158,4 @@ def load_manifest(snapshot: Snapshot, n8n_root: str = "n8n") -> Manifest:
             )
         )
 
-    return Manifest(workflows=workflows, externalize_code=externalize_code)
+    return Manifest(workflows=workflows, externalize_code=externalize_code, tags=tags_mapping)

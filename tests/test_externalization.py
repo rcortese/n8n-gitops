@@ -97,7 +97,7 @@ class TestExternalizeWorkflowCode:
             )
 
             # Check script file was created
-            script_file = scripts_dir / "Test_Workflow" / "JS_Node_jsCode.js"
+            script_file = scripts_dir / "Test_Workflow" / "JS_Node.js"
             assert script_file.exists()
             assert script_file.read_text() == "console.log('hello');"
 
@@ -124,7 +124,7 @@ class TestExternalizeWorkflowCode:
             assert count == 1
 
             # Check script file was created with .py extension
-            script_file = scripts_dir / "Test_Workflow" / "Python_Node_pythonCode.py"
+            script_file = scripts_dir / "Test_Workflow" / "Python_Node.py"
             assert script_file.exists()
             assert script_file.read_text() == "print('hello')"
 
@@ -157,8 +157,8 @@ class TestExternalizeWorkflowCode:
             assert count == 2
 
             # Check both files were created
-            js_file = scripts_dir / "Multi_Code" / "JS_Node_jsCode.js"
-            py_file = scripts_dir / "Multi_Code" / "Python_Node_pythonCode.py"
+            js_file = scripts_dir / "Multi_Code" / "JS_Node.js"
+            py_file = scripts_dir / "Multi_Code" / "Python_Node.py"
             assert js_file.exists()
             assert py_file.exists()
 
@@ -258,7 +258,7 @@ class TestExternalizeWorkflowCode:
             assert count == 2
 
             # Check that only one file exists (second one overwrites first)
-            file1 = scripts_dir / "Test" / "Same_Name_jsCode.js"
+            file1 = scripts_dir / "Test" / "Same_Name.js"
             assert file1.exists()
             # The second node's code should have overwritten the first
             assert file1.read_text() == "console.log('second');"
@@ -287,7 +287,7 @@ class TestExternalizeWorkflowCode:
             # Checksum should NOT be present
             assert "sha256=" not in directive
             # Should just be the basic include directive
-            assert directive == "@@n8n-gitops:include scripts/Test/Node_jsCode.js"
+            assert directive == "@@n8n-gitops:include scripts/Test/Node.js"
 
     def test_workflow_without_nodes(self):
         """Test handling workflow without nodes."""

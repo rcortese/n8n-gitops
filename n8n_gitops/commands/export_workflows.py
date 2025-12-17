@@ -98,6 +98,7 @@ def run_export(args: argparse.Namespace) -> None:
     # Export each workflow
     exported_specs: list[dict[str, Any]] = []
     total_externalized = 0
+    tags_mapping: dict[str, str] = {}  # Maps tag ID to tag name
 
     for wf_summary in workflows_to_export:
         wf_id = wf_summary.get("id")
@@ -160,13 +161,28 @@ def run_export(args: argparse.Namespace) -> None:
             print(f"    ✗ Error writing file: {e}")
             continue
 
+        # Extract tags (from n8n API: list of objects with id, name, createdAt, updatedAt)
+        # We only need ID and name
+        workflow_tags = workflow.get("tags", [])
+        tag_ids: list[str] = []
+
+        for tag in workflow_tags:
+            if isinstance(tag, dict):
+                tag_id = tag.get("id")
+                tag_name = tag.get("name")
+
+                if tag_id and tag_name:
+                    # Add to global tags mapping
+                    tags_mapping[str(tag_id)] = str(tag_name)
+                    # Add tag ID to workflow's tag list
+                    tag_ids.append(str(tag_id))
+
         # Add to manifest
         exported_specs.append(
             {
                 "name": wf_name,
-                "file": f"workflows/{filename}",
                 "active": workflow.get("active", False),
-                "tags": workflow.get("tags", []),
+                "tags": tag_ids,
             }
         )
 
@@ -204,10 +220,11 @@ def run_export(args: argparse.Namespace) -> None:
         # This ensures deleted workflows are removed from manifest
         existing_specs = exported_specs
 
-        # Write manifest (preserve externalize_code setting)
+        # Write manifest (preserve externalize_code setting, include tags mapping)
         manifest_content = yaml.dump(
             {
                 "externalize_code": externalize_code,
+                "tags": tags_mapping,
                 "workflows": existing_specs
             },
             default_flow_style=False,
@@ -324,9 +341,9 @@ def _externalize_workflow_code(
             safe_node_name = _sanitize_filename(node_name)
             extension = _get_file_extension(field_name)
 
-            # Create filename: node-name_field-type.ext
+            # Create filename: node-name.ext
             # Overwrite if it already exists (no counter)
-            base_filename = f"{safe_node_name}_{field_name}{extension}"
+            base_filename = f"{safe_node_name}{extension}"
             script_path = workflow_scripts_dir / base_filename
 
             # Write code to file (overwrite if exists)
