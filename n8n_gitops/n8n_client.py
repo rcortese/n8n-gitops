@@ -233,3 +233,97 @@ class N8nClient:
             "DELETE",
             f"/api/v1/workflows/{workflow_id}",
         )
+
+    def list_tags(self) -> list[dict[str, Any]]:
+        """List all tags with pagination support.
+
+        Returns:
+            List of tag objects
+
+        Raises:
+            APIError: If request fails
+        """
+        all_tags: list[dict[str, Any]] = []
+        cursor: str | None = ""
+
+        # Paginate through all tags
+        while cursor is not None:
+            params = {"limit": 100}
+            if cursor:
+                params["cursor"] = cursor
+
+            result = self._request("GET", "/api/v1/tags", params=params)
+
+            if isinstance(result, dict):
+                # Extract tags from data field
+                tags = result.get("data", [])
+                if isinstance(tags, list):
+                    all_tags.extend(tags)
+
+                # Get next cursor for pagination
+                cursor = result.get("nextCursor")
+            elif isinstance(result, list):
+                # Fallback for older n8n versions that return list directly
+                all_tags.extend(result)
+                cursor = None
+            else:
+                # No more data
+                cursor = None
+
+        return all_tags
+
+    def create_tag(self, name: str) -> dict[str, Any]:
+        """Create a new tag.
+
+        Args:
+            name: Tag name
+
+        Returns:
+            Created tag object with ID
+
+        Raises:
+            APIError: If request fails
+        """
+        result = self._request("POST", "/api/v1/tags", json_data={"name": name})
+        if isinstance(result, dict):
+            return result
+        raise APIError(f"Unexpected response type for create_tag: {type(result)}")
+
+    def update_tag(self, tag_id: str, name: str) -> dict[str, Any]:
+        """Update a tag's name.
+
+        Args:
+            tag_id: Tag ID
+            name: New tag name
+
+        Returns:
+            Updated tag object
+
+        Raises:
+            APIError: If request fails
+        """
+        result = self._request(
+            "PUT", f"/api/v1/tags/{tag_id}", json_data={"name": name}
+        )
+        if isinstance(result, dict):
+            return result
+        raise APIError(f"Unexpected response type for update_tag: {type(result)}")
+
+    def update_workflow_tags(self, workflow_id: str, tag_ids: list[str]) -> None:
+        """Update tags assigned to a workflow.
+
+        Args:
+            workflow_id: Workflow ID
+            tag_ids: List of tag IDs to assign to the workflow
+
+        Raises:
+            APIError: If request fails
+        """
+        # Convert tag IDs to required format: [{"id": "tag-id"}, ...]
+        tags_data = [{"id": tag_id} for tag_id in tag_ids]
+
+        self._request(
+            "PUT",
+            f"/api/v1/workflows/{workflow_id}/tags",
+            json_data=tags_data,
+        )

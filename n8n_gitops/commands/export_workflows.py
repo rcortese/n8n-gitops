@@ -63,6 +63,23 @@ def run_export(args: argparse.Namespace) -> None:
     # Initialize client
     client = N8nClient(auth.api_url, auth.api_key)
 
+    # Fetch all tags first
+    print("Fetching tags...")
+    tags_mapping: dict[str, str] = {}  # Maps tag ID to tag name
+    try:
+        remote_tags = client.list_tags()
+        print(f"Found {len(remote_tags)} tag(s)")
+
+        # Build tags mapping from all tags in n8n
+        for tag in remote_tags:
+            tag_id = tag.get("id")
+            tag_name = tag.get("name")
+            if tag_id and tag_name:
+                tags_mapping[str(tag_id)] = str(tag_name)
+    except Exception as e:
+        print(f"Warning: Could not fetch tags: {e}")
+        # Continue without tags
+
     # Fetch workflows
     print("Fetching workflows...")
     try:
@@ -98,7 +115,6 @@ def run_export(args: argparse.Namespace) -> None:
     # Export each workflow
     exported_specs: list[dict[str, Any]] = []
     total_externalized = 0
-    tags_mapping: dict[str, str] = {}  # Maps tag ID to tag name
 
     for wf_summary in workflows_to_export:
         wf_id = wf_summary.get("id")
@@ -161,20 +177,14 @@ def run_export(args: argparse.Namespace) -> None:
             print(f"    ✗ Error writing file: {e}")
             continue
 
-        # Extract tags (from n8n API: list of objects with id, name, createdAt, updatedAt)
-        # We only need ID and name
+        # Extract tag IDs from workflow (tags are already in tags_mapping)
         workflow_tags = workflow.get("tags", [])
         tag_ids: list[str] = []
 
         for tag in workflow_tags:
             if isinstance(tag, dict):
                 tag_id = tag.get("id")
-                tag_name = tag.get("name")
-
-                if tag_id and tag_name:
-                    # Add to global tags mapping
-                    tags_mapping[str(tag_id)] = str(tag_name)
-                    # Add tag ID to workflow's tag list
+                if tag_id:
                     tag_ids.append(str(tag_id))
 
         # Add to manifest

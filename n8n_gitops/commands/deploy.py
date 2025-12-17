@@ -16,6 +16,83 @@ from n8n_gitops.normalize import normalize_json
 from n8n_gitops.render import RenderOptions, render_workflow_json
 
 
+def _sync_tags(
+    client: N8nClient,
+    manifest_tags: dict[str, str],
+) -> tuple[dict[str, str], bool]:
+    """Synchronize tags between manifest and n8n instance.
+
+    Args:
+        client: N8n API client
+        manifest_tags: Tag ID to name mapping from manifest
+
+    Returns:
+        Tuple of (updated_tags_mapping, tags_were_created)
+        - updated_tags_mapping: Updated tag ID to name mapping (with new IDs for created tags)
+        - tags_were_created: True if any tags were created (manifest needs updating)
+    """
+    print("\nSynchronizing tags...")
+
+    # Fetch existing tags from n8n
+    try:
+        remote_tags = client.list_tags()
+        print(f"Found {len(remote_tags)} remote tag(s)")
+    except Exception as e:
+        print(f"  ⚠ Warning: Could not fetch tags from n8n: {e}")
+        return manifest_tags, False
+
+    # Build remote tag mappings
+    remote_tags_by_id: dict[str, str] = {}
+    remote_tags_by_name: dict[str, str] = {}
+
+    for tag in remote_tags:
+        tag_id = tag.get("id")
+        tag_name = tag.get("name")
+        if tag_id and tag_name:
+            remote_tags_by_id[str(tag_id)] = str(tag_name)
+            remote_tags_by_name[str(tag_name)] = str(tag_id)
+
+    # Track changes
+    updated_tags = dict(manifest_tags)  # Copy manifest tags
+    tags_were_created = False
+
+    # Process each tag from manifest
+    for tag_id, tag_name in manifest_tags.items():
+        if tag_id in remote_tags_by_id:
+            # Tag ID exists in n8n
+            remote_name = remote_tags_by_id[tag_id]
+            if remote_name != tag_name:
+                # Name is different, update it
+                print(f"  🔄 Updating tag '{tag_id}': '{remote_name}' → '{tag_name}'")
+                try:
+                    client.update_tag(tag_id, tag_name)
+                    print(f"    ✓ Updated")
+                except Exception as e:
+                    print(f"    ✗ Failed to update tag: {e}")
+            else:
+                # Name matches, nothing to do
+                print(f"  ✓ Tag '{tag_name}' (ID: {tag_id}) already up to date")
+        else:
+            # Tag ID doesn't exist in n8n, create new tag
+            print(f"  ➕ Creating tag '{tag_name}' (manifest ID '{tag_id}' not found in n8n)")
+            try:
+                created_tag = client.create_tag(tag_name)
+                new_tag_id = created_tag.get("id")
+
+                if new_tag_id:
+                    print(f"    ✓ Created with new ID: {new_tag_id}")
+                    # Update the mapping with the new ID
+                    updated_tags.pop(tag_id)  # Remove old ID
+                    updated_tags[str(new_tag_id)] = tag_name
+                    tags_were_created = True
+                else:
+                    print(f"    ✗ Created tag but no ID returned")
+            except Exception as e:
+                print(f"    ✗ Failed to create tag: {e}")
+
+    return updated_tags, tags_were_created
+
+
 def _prepare_workflow_for_api(workflow: dict[str, Any]) -> dict[str, Any]:
     """Prepare workflow for n8n API by removing fields that cause validation errors.
 
@@ -98,6 +175,43 @@ def run_deploy(args: argparse.Namespace) -> None:
 
     # Initialize client
     client = N8nClient(auth.api_url, auth.api_key)
+
+    # Synchronize tags (update names, create missing tags)
+    updated_tags, tags_were_created = _sync_tags(client, manifest.tags)
+
+    # Update manifest tags and workflow tag references if any were created (new IDs assigned)
+    if tags_were_created:
+        # Build old_id -> new_id mapping
+        old_ids = set(manifest.tags.keys())
+        new_ids = set(updated_tags.keys())
+
+        # Find which IDs changed
+        id_mapping: dict[str, str] = {}
+        for old_id in old_ids:
+            if old_id not in new_ids:
+                # This old ID was replaced, find the new one
+                old_name = manifest.tags[old_id]
+                for new_id, new_name in updated_tags.items():
+                    if new_name == old_name and new_id not in old_ids:
+                        id_mapping[old_id] = new_id
+                        break
+
+        # Update tag IDs in workflow specs
+        if id_mapping:
+            print(f"\n  Updating tag references in {len(manifest.workflows)} workflow(s)...")
+            for spec in manifest.workflows:
+                updated_tag_ids = []
+                for tag_id in spec.tags:
+                    # Use new ID if it was mapped, otherwise keep old ID
+                    new_tag_id = id_mapping.get(tag_id, tag_id)
+                    updated_tag_ids.append(new_tag_id)
+                spec.tags = updated_tag_ids
+
+        # Update manifest tags mapping
+        manifest.tags = updated_tags
+
+        print("\n⚠ Tags were created with new IDs - manifest needs updating")
+        print("  Run 'n8n-gitops export' to update the manifest with new tag IDs")
 
     # Fetch remote workflows
     print("\nFetching remote workflows...")
@@ -272,6 +386,12 @@ def run_deploy(args: argparse.Namespace) -> None:
                     print(f"    Deactivating workflow...")
                     client.deactivate_workflow(workflow_id)
                     print(f"    ✓ Deactivated")
+
+                # Update workflow tags
+                if spec.tags:
+                    print(f"    Updating tags ({len(spec.tags)} tag(s))...")
+                    client.update_workflow_tags(workflow_id, spec.tags)
+                    print(f"    ✓ Tags updated")
 
         except Exception as e:
             print(f"    ✗ Error: {e}")
