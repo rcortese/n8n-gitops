@@ -2,7 +2,6 @@
 
 import json
 import os
-from typing import Any
 
 from n8n_gitops.exceptions import ValidationError
 from n8n_gitops.gitref import Snapshot

@@ -13,7 +13,6 @@ from n8n_gitops.exceptions import ManifestError, RenderError
 from n8n_gitops.gitref import create_snapshot
 from n8n_gitops.manifest import load_manifest
 from n8n_gitops.n8n_client import N8nClient
-from n8n_gitops.normalize import normalize_json
 from n8n_gitops.render import RenderOptions, render_workflow_json
 
 
@@ -67,7 +66,7 @@ def _sync_tags(
                 logger.info(f"  🔄 Updating tag '{tag_id}': '{remote_name}' → '{tag_name}'")
                 try:
                     client.update_tag(tag_id, tag_name)
-                    logger.info(f"    ✓ Updated")
+                    logger.info("    ✓ Updated")
                 except Exception as e:
                     logger.error(f"    ✗ Failed to update tag: {e}")
             else:
@@ -87,7 +86,7 @@ def _sync_tags(
                     updated_tags[str(new_tag_id)] = tag_name
                     tags_were_created = True
                 else:
-                    logger.error(f"    ✗ Created tag but no ID returned")
+                    logger.error("    ✗ Created tag but no ID returned")
             except Exception as e:
                 logger.error(f"    ✗ Failed to create tag: {e}")
 
@@ -120,7 +119,7 @@ def _prepare_workflow_for_api(workflow: dict[str, Any]) -> dict[str, Any]:
         "meta",         # Metadata (if null, causes issues)
         "pinData",      # Pinned test data (if empty, causes issues)
         "staticData",   # Static data (if null, causes issues)
-        "triggerCount", # Trigger counter
+        "triggerCount",  # Trigger counter
     ]
 
     for field in fields_to_remove:
@@ -350,24 +349,24 @@ def run_deploy(args: argparse.Namespace) -> None:
                     old_workflow["name"] = backup_name
                     old_workflow_cleaned = _prepare_workflow_for_api(old_workflow)
                     client.update_workflow(workflow_id, old_workflow_cleaned)
-                    logger.info(f"    ✓ Backup created")
+                    logger.info("    ✓ Backup created")
 
                     # Now create new workflow with original name
-                    logger.info(f"    Creating new workflow...")
+                    logger.info("    Creating new workflow...")
                     result = client.create_workflow(api_workflow)
                     workflow_id = result.get("id")
                     logger.info(f"    ✓ Created with ID: {workflow_id}")
                 else:
                     # Delete old workflow and create new one
-                    logger.info(f"    Deleting old workflow...")
+                    logger.info("    Deleting old workflow...")
                     try:
                         client.delete_workflow(workflow_id)
-                        logger.info(f"    ✓ Old workflow deleted")
+                        logger.info("    ✓ Old workflow deleted")
                     except Exception as e:
                         logger.warning(f"    ⚠ Could not delete old workflow: {e}")
-                        logger.warning(f"    → Creating new workflow anyway...")
+                        logger.warning("    → Creating new workflow anyway...")
 
-                    logger.info(f"    Creating new workflow...")
+                    logger.info("    Creating new workflow...")
                     result = client.create_workflow(api_workflow)
                     workflow_id = result.get("id")
                     logger.info(f"    ✓ Created with ID: {workflow_id}")
@@ -375,19 +374,19 @@ def run_deploy(args: argparse.Namespace) -> None:
             # Set active state based on manifest
             if workflow_id:
                 if spec.active:
-                    logger.info(f"    Activating workflow...")
+                    logger.info("    Activating workflow...")
                     client.activate_workflow(workflow_id)
-                    logger.info(f"    ✓ Activated")
+                    logger.info("    ✓ Activated")
                 else:
-                    logger.info(f"    Deactivating workflow...")
+                    logger.info("    Deactivating workflow...")
                     client.deactivate_workflow(workflow_id)
-                    logger.info(f"    ✓ Deactivated")
+                    logger.info("    ✓ Deactivated")
 
                 # Update workflow tags
                 if spec.tags:
                     logger.info(f"    Updating tags ({len(spec.tags)} tag(s))...")
                     client.update_workflow_tags(workflow_id, spec.tags)
-                    logger.info(f"    ✓ Tags updated")
+                    logger.info("    ✓ Tags updated")
 
         except Exception as e:
             logger.error(f"    ✗ Error: {e}")
@@ -395,23 +394,23 @@ def run_deploy(args: argparse.Namespace) -> None:
             # Provide helpful suggestions for common errors
             error_str = str(e).lower()
             if "additional properties" in error_str or "validation" in error_str:
-                logger.error(f"\n    💡 Tip: The workflow file may contain n8n-managed fields.")
-                logger.error(f"    Run 'n8n-gitops validate' to check for problematic fields.")
-                logger.error(f"    Re-export the workflow to get a clean version:")
+                logger.error("\n    💡 Tip: The workflow file may contain n8n-managed fields.")
+                logger.error("    Run 'n8n-gitops validate' to check for problematic fields.")
+                logger.error("    Re-export the workflow to get a clean version:")
                 logger.error(f"      n8n-gitops export --names \"{spec.name}\" --externalize-code")
 
             raise SystemExit(1)
 
     # Execute prune if requested
     if workflows_to_prune:
-        logger.info(f"\nPruning workflows not in manifest...")
+        logger.info("\nPruning workflows not in manifest...")
         for wf in workflows_to_prune:
             wf_id = wf.get("id")
             wf_name = wf.get("name")
             try:
                 logger.info(f"  Deleting: {wf_name}...")
                 client.delete_workflow(wf_id)
-                logger.info(f"    ✓ Deleted")
+                logger.info("    ✓ Deleted")
             except Exception as e:
                 logger.error(f"    ✗ Error deleting {wf_name}: {e}")
 

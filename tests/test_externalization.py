@@ -1,10 +1,7 @@
 """Tests for code externalization functionality."""
 
-import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
-
-import pytest
 
 from n8n_gitops.commands.export_workflows import (
     _externalize_workflow_code,

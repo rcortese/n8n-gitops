@@ -2,7 +2,6 @@
 
 import argparse
 from pathlib import Path
-from typing import Any
 
 from n8n_gitops import logger
 

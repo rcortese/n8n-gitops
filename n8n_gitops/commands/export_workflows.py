@@ -1,7 +1,6 @@
 """Export command implementation."""
 
 import argparse
-import json
 import re
 import shutil
 from pathlib import Path
@@ -134,7 +133,7 @@ def run_export(args: argparse.Namespace) -> None:
         wf_name = wf_summary.get("name")
 
         if not wf_id or not wf_name:
-            logger.warning(f"  ⚠ Skipping workflow with missing id or name")
+            logger.warning("  ⚠ Skipping workflow with missing id or name")
             continue
 
         logger.info(f"  Exporting: {wf_name}")
@@ -395,7 +394,6 @@ def _externalize_workflow_code(
             continue
 
         node_name = node.get("name", "unnamed")
-        node_id = node.get("id", "no-id")
         parameters = node.get("parameters", {})
 
         if not isinstance(parameters, dict):

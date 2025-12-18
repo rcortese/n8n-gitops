@@ -2,8 +2,6 @@
 
 import argparse
 import sys
-from pathlib import Path
-from typing import Any
 
 from n8n_gitops import __version__
 from n8n_gitops import logger
