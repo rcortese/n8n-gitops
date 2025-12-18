@@ -267,11 +267,17 @@ def run_export(args: argparse.Namespace) -> None:
         # This ensures deleted workflows are removed from manifest
         existing_specs = exported_specs
 
+        # Sort workflows by name for predictable manifest ordering
+        existing_specs = sorted(existing_specs, key=lambda w: w["name"])
+
+        # Sort tags by ID for predictable manifest ordering (tag IDs are strings like "I3JPGtR4K4K2vLh")
+        sorted_tags = dict(sorted(tags_mapping.items()))
+
         # Write manifest (preserve externalize_code setting, include tags mapping)
         manifest_content = yaml.dump(
             {
                 "externalize_code": externalize_code,
-                "tags": tags_mapping,
+                "tags": sorted_tags,
                 "workflows": existing_specs
             },
             default_flow_style=False,
