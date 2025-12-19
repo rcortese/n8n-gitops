@@ -103,7 +103,7 @@ def _parse_tags(data: dict[str, Any]) -> list[str]:
             raise ManifestError("All tags must be strings")
         return tags_data
 
-    raise ManifestError("'tags' must be a list or dictionary")
+    raise ManifestError("'tags' must be a list")
 
 
 def _validate_workflow_field_list(

@@ -171,7 +171,7 @@ workflows:
         assert manifest.workflows[0].tags == []
 
     def test_manifest_tags_invalid_type(self):
-        """Test that tags must be a list or dictionary."""
+        """Test that tags must be a list."""
         snapshot = MockSnapshot({
             "n8n/manifests/workflows.yaml": """
 tags: "invalid string"
@@ -179,11 +179,11 @@ tags: "invalid string"
 workflows: []
 """
         })
-        with pytest.raises(ManifestError, match="'tags' must be a list or dictionary"):
+        with pytest.raises(ManifestError, match="'tags' must be a list"):
             load_manifest(snapshot)
 
     def test_manifest_backward_compatibility_dict_tags(self):
-        """Test backward compatibility with old dict format."""
+        """Test that old dict format is rejected (backward compatibility removed)."""
         snapshot = MockSnapshot({
             "n8n/manifests/workflows.yaml": """
 tags:
@@ -197,14 +197,9 @@ workflows:
       - "2"
 """
         })
-        # Should load successfully and convert to new format
-        manifest = load_manifest(snapshot)
-        # Tags should be converted to list of unique names
-        assert len(manifest.tags) == 2
-        assert "production" in manifest.tags
-        assert "development" in manifest.tags
-        # Workflow tags should be converted from IDs to names
-        assert manifest.workflows[0].tags == ["production", "development"]
+        # Dict format is no longer supported
+        with pytest.raises(ManifestError, match="'tags' must be a list"):
+            load_manifest(snapshot)
 
     def test_manifest_workflow_tag_validation(self):
         """Test that workflow tags must exist in manifest tags section."""
