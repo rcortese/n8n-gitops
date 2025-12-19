@@ -66,11 +66,27 @@ jobs:
       run: |
         pyinstaller --onefile --name n8n-gitops n8n_gitops/cli.py
 
-    - name: Upload Linux binary
+    - name: Create release archives
+      run: |
+        cd dist
+        chmod +x n8n-gitops
+
+        # Create tar.gz
+        tar -czf n8n-gitops-linux-amd64.tar.gz n8n-gitops
+
+        # Create zip
+        zip n8n-gitops-linux-amd64.zip n8n-gitops
+
+        # List created files
+        ls -lh
+
+    - name: Upload Linux archives
       uses: actions/upload-artifact@v4
       with:
         name: n8n-gitops-linux
-        path: dist/n8n-gitops
+        path: |
+          dist/n8n-gitops-linux-amd64.tar.gz
+          dist/n8n-gitops-linux-amd64.zip
         retention-days: 90
 
   publish-release:
@@ -97,9 +113,12 @@ jobs:
 
         # Check if release exists
         if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-          echo "Release $TAG_NAME exists, uploading binary..."
-          gh release upload "$TAG_NAME" dist/n8n-gitops --clobber
-          echo "✅ Binary uploaded to release $TAG_NAME"
+          echo "Release $TAG_NAME exists, uploading archives..."
+          gh release upload "$TAG_NAME" \
+            dist/n8n-gitops-linux-amd64.tar.gz \
+            dist/n8n-gitops-linux-amd64.zip \
+            --clobber
+          echo "✅ Archives uploaded to release $TAG_NAME"
         else
-          echo "⚠️  Release $TAG_NAME does not exist yet. Binary available as workflow artifact."
+          echo "⚠️  Release $TAG_NAME does not exist yet. Archives available as workflow artifacts."
         fi
