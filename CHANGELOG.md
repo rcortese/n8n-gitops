@@ -1,5 +1,70 @@
 # Changelog
 
+## [0.3.0] - 2025-12-19
+
+### Changed
+
+#### Tag Management Improvements
+
+- **BREAKING**: Tags in manifest now only support list format
+  - Removed backward compatibility for dictionary-based tag format
+  - Error message updated to reflect list-only requirement
+  - Simplified tag parsing logic in `_parse_tags()`
+
+#### Code Refactoring and Modularity
+
+- **Refactored `deploy` command** for improved modularity and clarity
+  - Split monolithic deploy logic into focused functions
+  - Improved error handling and validation
+  - Enhanced code maintainability
+
+- **Refactored `render` and `validate`** for better separation of concerns
+  - Clearer function boundaries
+  - Improved testability
+  - More consistent error handling
+
+- **Centralized logging utility**
+  - Added `logger.py` module for consistent logging across all commands
+  - Integrated logger throughout CLI commands
+  - Removed redundant logging configurations
+
+#### Workflow and Tag Ordering
+
+- **Deterministic export output**
+  - Workflows are now sorted alphabetically in exported manifests
+  - Tags are sorted alphabetically for consistent ordering
+  - Ensures consistent Git diffs and reduces merge conflicts
+
+#### Code Quality
+
+- Removed unused imports across the codebase
+- Improved log message consistency
+- Enhanced code organization and readability
+
+### Added
+
+- **Tag management functionality** in manifest handling
+- **Centralized logger utility** (`n8n_gitops/logger.py`)
+- **Release process documentation** (`docs/release-process.md`)
+
+### Documentation
+
+- Added comprehensive release process guide
+- Updated authentication documentation
+- Improved code externalization documentation
+- Enhanced deployment and command documentation
+- Added GitOps principles documentation
+- Added comparison with n8n Enterprise Git features
+- Restructured documentation with sidebar metadata for better navigation
+- Removed redundant documentation files for cleaner structure
+
+### Fixed
+
+- Test suite updated to reflect tag format changes
+- Backward compatibility tests now correctly verify rejection of old dict format
+
+---
+
 ## [0.2.0] - 2025-12-16
 
 ### Added

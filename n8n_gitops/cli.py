@@ -29,7 +29,7 @@ def main() -> None:
     """Main CLI entrypoint."""
     parser = argparse.ArgumentParser(
         prog="n8n-gitops",
-        description="GitOps CLI for n8n Community Edition",
+        description=f"GitOps CLI for n8n Community Edition v{__version__}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
