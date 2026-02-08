@@ -156,7 +156,6 @@ jobs:
   documentation:
     name: Update Documentation
     needs: test
-    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     uses: byjg/byjg.github.io/.github/workflows/add-doc.yaml@master
     with:
