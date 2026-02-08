@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "n8n-gitops"
-version = "0.1.0"
+version = "0.3.0"
 description = "GitOps CLI for n8n Community Edition"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,17 +27,6 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "black>=23.0.0",
-    "mypy>=1.5.0",
-    "types-PyYAML",
-    "types-requests",
-    "flake8"
-]
-
 [project.scripts]
 n8n-gitops = "n8n_gitops.cli:main"
 
@@ -54,3 +43,14 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "mypy>=1.5.0",
+    "types-PyYAML",
+    "types-requests",
+    "flake8"
+]

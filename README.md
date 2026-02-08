@@ -26,8 +26,11 @@ A GitOps CLI tool for [n8n](https://n8n.io) Community Edition that brings versio
 ## Quick Start
 
 ```bash
-# Install
-pip install -e .
+# Install from PyPI
+pip install n8n-gitops
+
+# Or install with uv (faster)
+uv pip install n8n-gitops
 
 # Create project
 n8n-gitops create-project my-n8n-project
@@ -180,17 +183,25 @@ my-n8n-project/
 ## Development
 
 ```bash
-# Install development dependencies
+# Clone the repository
+git clone https://github.com/n8n-gitops/n8n-gitops.git
+cd n8n-gitops
+
+# Install with uv (recommended)
+uv sync --dev
+
+# Or with pip
 pip install -e ".[dev]"
 
 # Run tests
-source venv/bin/activate
-pytest -v
+uv run pytest -v  # with uv
+# or
+pytest -v  # with pip
 ```
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.10+
 - Git
 - n8n instance with API access
 

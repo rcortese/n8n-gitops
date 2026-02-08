@@ -5,9 +5,27 @@ This document describes the process for creating a new release of n8n-gitops.
 ## Prerequisites
 
 - Write access to the repository
+- PyPI trusted publishing configured (see "PyPI Setup" below)
 - `gh` CLI tool installed (optional, for automated release creation)
 - All changes merged to `main` branch
 - All tests passing
+
+## PyPI Setup (One-Time)
+
+Before your first release, configure PyPI trusted publishing:
+
+1. Create a PyPI account at https://pypi.org/account/register/
+2. Go to https://pypi.org/manage/account/publishing/
+3. Click "Add a new pending publisher"
+4. Fill in the form:
+   - **PyPI Project Name**: `n8n-gitops`
+   - **Owner**: Your GitHub username/org (e.g., `n8n-gitops`)
+   - **Repository name**: `n8n-gitops`
+   - **Workflow name**: `build.yml`
+   - **Environment name**: (leave blank)
+5. Save the pending publisher
+
+The first release will create the PyPI project. Subsequent releases will publish automatically.
 
 ## Release Checklist
 
@@ -76,8 +94,13 @@ After pushing the tag:
 
 1. Go to [GitHub Actions](../../actions)
 2. Wait for the "Build, Lint and Test" workflow to complete
-3. Verify all jobs passed (test and build)
-4. The Linux binary will be uploaded as an artifact
+3. Verify all jobs passed:
+   - **test**: Runs tests and linting
+   - **build**: Creates Linux binary
+   - **publish-pypi**: Publishes to PyPI (requires trusted publishing setup)
+   - **publish-release**: Uploads binaries to GitHub release
+4. The package will be automatically published to PyPI
+5. The Linux binary will be uploaded to the GitHub release
 
 ### 6. Create GitHub Release
 
@@ -108,10 +131,11 @@ gh release create vX.Y.Z \
 
 ## Release Artifacts
 
-Each release should include:
+Each release automatically includes:
 
 - **Source code** (automatically included by GitHub)
-- **Linux binary**: `n8n-gitops-linux` (built by GitHub Actions)
+- **Linux binary**: `n8n-gitops-linux-amd64.tar.gz` and `.zip` (built by GitHub Actions)
+- **PyPI package**: Published to https://pypi.org/project/n8n-gitops/ (via GitHub Actions)
 - **Release notes**: Extracted from CHANGELOG.md
 
 ## Post-Release
