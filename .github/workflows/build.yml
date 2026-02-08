@@ -152,3 +152,15 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         print-hash: true
+
+  documentation:
+    name: Update Documentation
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    uses: byjg/byjg.github.io/.github/workflows/add-doc.yaml@master
+    with:
+      folder: devops
+      project: ${{ github.event.repository.name }}
+    secrets:
+      DOC_TOKEN: ${{ secrets.DOC_TOKEN }}
