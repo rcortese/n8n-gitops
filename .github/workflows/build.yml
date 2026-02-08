@@ -161,5 +161,6 @@ jobs:
     with:
       folder: devops
       project: ${{ github.event.repository.name }}
+      owner: ${{ github.repository_owner }}
     secrets:
       DOC_TOKEN: ${{ secrets.DOC_TOKEN }}
